@@ -1,0 +1,144 @@
+@echo off
+setlocal EnableDelayedExpansion
+
+:: Set console title
+title Created By Discord: notmisch
+
+:: Create log file
+set "logFile=%~dp0PcCheckLogs.log"
+echo Generating PC Check Tool Log... > "%logFile%"
+echo ================================ >> "%logFile%"
+echo Title: PC Check Tool - DMA and System Scanner >> "%logFile%"
+echo Date: %date% %time% >> "%logFile%"
+echo Username: %username% >> "%logFile%"
+echo Computer: %computername% >> "%logFile%"
+echo ================================ >> "%logFile%"
+echo. >> "%logFile%"
+
+:: OS Install Date
+echo [OS INSTALL DATE] >> "%logFile%"
+powershell -Command "Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object InstallDate | Format-Table -AutoSize" >> "%logFile%"
+echo. >> "%logFile%"
+
+:: OneDrive Detection
+echo [ONEDRIVE DETECTION] >> "%logFile%"
+if exist "%USERPROFILE%\OneDrive" (
+    echo OneDrive folder found at %USERPROFILE%\OneDrive >> "%logFile%"
+    dir "%USERPROFILE%\OneDrive" /s /b | findstr "\.onedrive" >> "%logFile%" 2>nul
+) else (
+    echo OneDrive folder not found. >> "%logFile%"
+)
+reg query "HKCU\Software\Microsoft\OneDrive" >> "%logFile%" 2>nul
+echo. >> "%logFile%"
+
+:: User Settings
+echo [USER SETTINGS] >> "%logFile%"
+reg query "HKCU\Control Panel" >> "%logFile%" 2>nul
+echo. >> "%logFile%"
+
+:: Compatibility Assistant
+echo [COMPATIBILITY ASSISTANT] >> "%logFile%"
+reg query "HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags" >> "%logFile%" 2>nul
+echo. >> "%logFile%"
+
+:: App Switch Tracking (UserAssist)
+echo [USERASSIST - APP SWITCH TRACKING] >> "%logFile%"
+powershell -Command "Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\UserAssist\*\Count' | ForEach-Object { $_.PSObject.Properties | Where-Object { $_.Name -ne 'PSPath' -and $_.Name -ne 'PSParentPath' -and $_.Name -ne 'PSChildName' -and $_.Name -ne 'PSDrive' -and $_.Name -ne 'PSProvider' } | Select-Object Name,Value } | Sort-Object Value -Descending | Select-Object -First 10 | Format-Table -AutoSize" >> "%logFile%"
+echo. >> "%logFile%"
+
+:: MuiCache
+echo [MUICACHE] >> "%logFile%"
+reg query "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache" >> "%logFile%" 2>nul
+echo. >> "%logFile%"
+
+:: Browser History Detection
+echo [BROWSER HISTORY] >> "%logFile%"
+echo Checking Chrome... >> "%logFile%"
+if exist "%LOCALAPPDATA%\Google\Chrome\User Data\Default\History" (
+    powershell -Command "Get-Item '%LOCALAPPDATA%\Google\Chrome\User Data\Default\History' | Select-Object LastWriteTime | Format-Table -AutoSize" >> "%logFile%"
+) else (
+    echo Chrome history not found. >> "%logFile%"
+)
+echo Checking Edge... >> "%logFile%"
+if exist "%LOCALAPPDATA%\Microsoft\Edge\User Data\Default\History" (
+    powershell -Command "Get-Item '%LOCALAPPDATA%\Microsoft\Edge\User Data\Default\History' | Select-Object LastWriteTime | Format-Table -AutoSize" >> "%logFile%"
+) else (
+    echo Edge history not found. >> "%logFile%"
+)
+echo Checking Firefox... >> "%logFile%"
+if exist "%APPDATA%\Mozilla\Firefox\Profiles\*.default-release\places.sqlite" (
+    powershell -Command "Get-Item '%APPDATA%\Mozilla\Firefox\Profiles\*.default-release\places.sqlite' | Select-Object LastWriteTime | Format-Table -AutoSize" >> "%logFile%"
+) else (
+    echo Firefox history not found. >> "%logFile%"
+)
+echo Checking Opera GX... >> "%logFile%"
+if exist "%APPDATA%\Opera Software\Opera GX Stable\History" (
+    powershell -Command "Get-Item '%APPDATA%\Opera Software\Opera GX Stable\History' | Select-Object LastWriteTime | Format-Table -AutoSize" >> "%logFile%"
+) else (
+    echo Opera GX history not found. >> "%logFile%"
+)
+echo Checking Brave... >> "%logFile%"
+if exist "%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data\Default\History" (
+    powershell -Command "Get-Item '%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data\Default\History' | Select-Object LastWriteTime | Format-Table -AutoSize" >> "%logFile%"
+) else (
+    echo Brave history not found. >> "%logFile%"
+)
+echo Checking Vivaldi... >> "%logFile%"
+if exist "%LOCALAPPDATA%\Vivaldi\User Data\Default\History" (
+    powershell -Command "Get-Item '%LOCALAPPDATA%\Vivaldi\User Data\Default\History' | Select-Object LastWriteTime | Format-Table -AutoSize" >> "%logFile%"
+) else (
+    echo Vivaldi history not found. >> "%logFile%"
+)
+echo. >> "%logFile%"
+
+:: R6 Username Detection Placeholder
+echo [R6 USERNAME DETECTION] >> "%logFile%"
+echo Placeholder: Summon stats.cc? (Y/N) - Manual check required. >> "%logFile%"
+echo. >> "%logFile%"
+
+:: Suspicious File Names (C: and D: drives)
+echo [SUSPICIOUS FILES - C: and D: DRIVES] >> "%logFile%"
+for %%G in (zip rar exe) do (
+    echo Scanning C:\ for *.%%G... >> "%logFile%"
+    powershell -Command "Get-ChildItem -Recurse -Path C:\ -Filter *.%%G -ErrorAction SilentlyContinue | ForEach-Object { 'File: ' + $_.FullName; '  Created: ' + $_.CreationTime; '  LastAccess: ' + $_.LastAccessTime; '  LastWrite: ' + $_.LastWriteTime; '' }" >> "%logFile%" 2>nul
+    echo Scanning D:\ for *.%%G... >> "%logFile%"
+    powershell -Command "Get-ChildItem -Recurse -Path D:\ -Filter *.%%G -ErrorAction SilentlyContinue | ForEach-Object { 'File: ' + $_.FullName; '  Created: ' + $_.CreationTime; '  LastAccess: ' + $_.LastAccessTime; '  LastWrite: ' + $_.LastWriteTime; '' }" >> "%logFile%" 2>nul
+)
+echo. >> "%logFile%"
+
+:: .tlscan Folder Check
+echo [.TLSCAN FOLDER CHECK] >> "%logFile%"
+if exist "%USERPROFILE%\.tlscan" (
+    echo .tlscan folder found at %USERPROFILE%\.tlscan >> "%logFile%"
+    dir "%USERPROFILE%\.tlscan" /s /b >> "%logFile%"
+) else (
+    echo .tlscan folder not found. >> "%logFile%"
+)
+echo. >> "%logFile%"
+
+:: Last Ran Dates (Prefetch)
+echo [PREFETCH - LAST RAN DATES] >> "%logFile%"
+powershell -Command "Get-ChildItem -Path 'C:\Windows\Prefetch' -Filter *.pf -ErrorAction SilentlyContinue | Sort-Object LastAccessTime -Descending | Select-Object -First 10 | Select-Object Name, CreationTime, LastAccessTime, LastWriteTime | Format-Table -AutoSize" >> "%logFile%"
+echo. >> "%logFile%"
+
+:: Deleted .exe and .pf Files (Recycle Bin)
+echo [RECYCLE BIN - DELETED .EXE and .PF FILES] >> "%logFile%"
+powershell -Command "Get-ChildItem -Path 'C:\$Recycle.Bin' -Recurse -Include *.exe,*.pf -ErrorAction SilentlyContinue | Select-Object FullName, CreationTime, LastWriteTime | Format-Table -AutoSize" >> "%logFile%"
+echo. >> "%logFile%"
+
+:: USB Devices
+echo [USB DEVICES] >> "%logFile%"
+powershell -Command "Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -like 'USB*' } | Select-Object Name, InstanceId, Status | Format-Table -AutoSize" >> "%logFile%"
+echo. >> "%logFile%"
+
+:: Copy to Clipboard (Fixed)
+powershell -Command "Get-Content '%logFile%' | Set-Clipboard"
+echo Log copied to clipboard and saved as: %logFile%
+
+:: Open in Notepad
+start notepad "%logFile%"
+
+:: Pause for review
+echo Scan complete. Log saved and copied to clipboard.
+timeout /t 5
+exit
